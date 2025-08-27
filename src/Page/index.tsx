@@ -1,51 +1,74 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Logo from '../Assets/devosnova.png'
+import * as S from './styles'
 import { useGetAllQuery } from '../services/api'
+import ThemeToggle from '../components/ToggleTheme'
+import ComandoBox from '../components/ComandoBox'
 
-const Page = () => {
+type Props = {
+  toggleTheme: () => void
+  isDark: boolean
+}
+
+const Page = ({ toggleTheme, isDark }: Props) => {
   const { data } = useGetAllQuery()
-  const [active, setActive] = useState(data?.github)
 
-  useEffect(() => {
-    if (data) {
-      setActive(data.github)
-    }
+  const sections = useMemo<SectionName[]>(() => {
+    if (!data) return []
+    return [
+      { name: 'GitHub', ...data.github },
+      { name: 'Linux', ...data.linux }
+    ]
   }, [data])
 
-  if (!data) return <p>Carregando...</p>
+  const [active, setActive] = useState<SectionName | null>(null)
+
+  useEffect(() => {
+    if (sections.length > 0) {
+      setActive(sections[0])
+    }
+  }, [sections])
 
   return (
     <>
-      <header>
-        <img src={Logo} alt="Devos" />
-      </header>
-      <section>
-        <div onClick={() => setActive(data.github)}>
-          <div>
-            <img src={data.github.icon} alt="GitHub" />
-            <p>GitHub</p>
-          </div>
-          <p>{data.github.descricao}</p>
+      <S.Header className="header">
+        <div className="container">
+          <img className="header__logo" src={Logo} alt="Devos" />
+          <ThemeToggle isDark={isDark} toggleTheme={toggleTheme} />
         </div>
-        <div onClick={() => setActive(data.linux)}>
-          <div>
-            <img src={data.linux.icon} alt="Linux" />
-            <p>Linux</p>
+      </S.Header>
+      <main>
+        <S.ButtonsContainer className="buttons">
+          <div className="container">
+            <h2 className="Title">Ecolha uma das opções: </h2>
+            <ul className="buttons__list">
+              {sections.map((section, i) => (
+                <li
+                  className="buttons__box"
+                  key={i}
+                  onClick={() => setActive(section)}
+                >
+                  <div className="buttons__box__logo">
+                    <img src={section.icon} alt={section.name} />
+                    <h2>{section.name}</h2>
+                  </div>
+                  <p className="buttons__box__text">{section.descricao}</p>
+                </li>
+              ))}
+            </ul>
           </div>
-          <p>{data.linux.descricao}</p>
-        </div>
-      </section>
-      <section>
-        <ul>
-          {active?.comandos.map((c, i) => (
-            <li key={i}>
-              <p>{c.comando}</p>
-              <p>{c.descricao}</p>
-              <p>{c.exemplo}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+        </S.ButtonsContainer>
+        <S.ComandosContainer className="comandos">
+          <div className="container">
+            <h2 className="Title">Comandos do {active?.name}:</h2>
+            <ul className="comandos__list">
+              {active?.comandos.map((c, i) => (
+                <ComandoBox comando={c} key={i} />
+              ))}
+            </ul>
+          </div>
+        </S.ComandosContainer>
+      </main>
     </>
   )
 }
